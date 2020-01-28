@@ -1,12 +1,20 @@
+logging:
+  level:
+    root: "DEBUG"
 app:
   generator:
-    nasdaq_google:
-      initialPrice: 1400.00
-      maxPercentageDiff: 5
-      minTickDelay: 2000
-      maxTickDelay: 5000
-    fx_usdPln:
-      initialPrice: 3.89
-      maxPercentageDiff: 10
-      minTickDelay: 500
-      maxTickDelay: 3000
+    prop: "some prop"
+    strings:
+      - "a"
+      - "b"
+    instruments:
+      - symbol: "GOOGL"
+        initialPrice: 1400.00
+        maxPercentageDiff: 2
+        minTickDelay: 2000
+        maxTickDelay: 5000
+      - symbol: "USD/PLN"
+        initialPrice: 3.89
+        maxPercentageDiff: 5
+        minTickDelay: 500
+        maxTickDelay: 3000

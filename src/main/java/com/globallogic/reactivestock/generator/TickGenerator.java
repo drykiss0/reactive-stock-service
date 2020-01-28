@@ -1,25 +1,30 @@
 package com.globallogic.reactivestock.generator;
 
-import com.globallogic.reactivestock.properties.TickGenerationProperties;
-import lombok.AccessLevel;
+import com.globallogic.reactivestock.properties.InstrumentProperties;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class TickGenerator implements Runnable {
+@Component
+@RequiredArgsConstructor
+public class TickGenerator implements Runnable {
 
-    protected final TickGenerationProperties properties;
+    @Getter
+    private final InstrumentProperties properties;
     private final ThreadPoolTaskScheduler taskScheduler;
 
-    private final AtomicInteger counter = new AtomicInteger();
+    @Getter
+    private volatile BigDecimal price;
 
     @PostConstruct
     private void onStartup() {
+        price = properties.getInitialPrice();
         taskScheduler.execute(this, 1000L);
     }
 
@@ -33,5 +38,17 @@ public abstract class TickGenerator implements Runnable {
                 new Date(System.currentTimeMillis() + nextDelay));
     }
 
-    protected abstract void onTick();
+    protected void onTick() {
+
+        final BigDecimal maxDiff = price.multiply(
+                properties.getMaxPercentageDiff().divide(BigDecimal.valueOf(100))
+        );
+
+        final double rangeMin = price.subtract(maxDiff).doubleValue();
+        final double rangeMax = price.add(maxDiff).doubleValue();
+
+        this.price = BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble(rangeMin, rangeMax));
+
+        System.out.println(properties.getSymbol() + " " + this.price);
+    };
 }
