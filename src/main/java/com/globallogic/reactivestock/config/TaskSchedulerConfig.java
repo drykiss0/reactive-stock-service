@@ -9,9 +9,10 @@ public class TaskSchedulerConfig {
 
     @Bean
     public ThreadPoolTaskScheduler taskScheduler(){
+
         final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
         threadPoolTaskScheduler.setPoolSize(5);
-        threadPoolTaskScheduler.setThreadNamePrefix("TickGenerators");
+        threadPoolTaskScheduler.setThreadNamePrefix("TickGenerator");
         return threadPoolTaskScheduler;
     }
 }
