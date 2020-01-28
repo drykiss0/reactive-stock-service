@@ -2,30 +2,28 @@ package com.globallogic.reactivestock.generator;
 
 import com.globallogic.reactivestock.properties.InstrumentProperties;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 
-@Component
-@RequiredArgsConstructor
-public class TickGenerator implements Runnable {
+class TickGenerator implements Runnable {
 
-    @Getter
+    private static final char UP_ARROW = 0x2191;
+    private static final char DOWN_ARROW = 0x2193;
+
     private final InstrumentProperties properties;
     private final ThreadPoolTaskScheduler taskScheduler;
 
     @Getter
     private volatile BigDecimal price;
 
-    @PostConstruct
-    private void onStartup() {
-        price = properties.getInitialPrice();
-        taskScheduler.execute(this, 1000L);
+    public TickGenerator(final InstrumentProperties properties, final ThreadPoolTaskScheduler taskScheduler) {
+        this.properties = properties;
+        this.taskScheduler = taskScheduler;
+        this.price = properties.getInitialPrice().setScale(4);
     }
 
     @Override
@@ -47,8 +45,21 @@ public class TickGenerator implements Runnable {
         final double rangeMin = price.subtract(maxDiff).doubleValue();
         final double rangeMax = price.add(maxDiff).doubleValue();
 
-        this.price = BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble(rangeMin, rangeMax));
+        final BigDecimal oldPrice = this.price;
+        this.price = BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble(rangeMin, rangeMax))
+                .setScale(4, RoundingMode.HALF_UP);
 
-        System.out.println(properties.getSymbol() + " " + this.price);
-    };
+        outputTick(oldPrice);
+    }
+
+    private void outputTick(final BigDecimal oldPrice) {
+        final BigDecimal priceDiffAsPercent = this.price.subtract(oldPrice)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(oldPrice, RoundingMode.HALF_UP)
+                .setScale(2, RoundingMode.HALF_UP);
+        final char arrow = priceDiffAsPercent.signum() >= 0 ? UP_ARROW : DOWN_ARROW;
+
+        System.out.println(String.format("%s %s %s%s%%",
+                properties.getSymbol(), this.price, arrow, priceDiffAsPercent.abs()));
+    }
 }

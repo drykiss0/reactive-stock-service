@@ -1,12 +1,10 @@
 logging:
   level:
-    root: "DEBUG"
+    root: "INFO"
+server:
+  port: 8080
 app:
   generator:
-    prop: "some prop"
-    strings:
-      - "a"
-      - "b"
     instruments:
       - symbol: "GOOGL"
         initialPrice: 1400.00
@@ -15,6 +13,6 @@ app:
         maxTickDelay: 5000
       - symbol: "USD/PLN"
         initialPrice: 3.89
-        maxPercentageDiff: 5
+        maxPercentageDiff: 3
         minTickDelay: 500
         maxTickDelay: 3000

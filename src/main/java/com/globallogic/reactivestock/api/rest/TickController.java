@@ -1,47 +1,37 @@
 package com.globallogic.reactivestock.api.rest;
 
-import com.globallogic.reactivestock.properties.GeneratorProperties;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.globallogic.reactivestock.api.rest.dto.PriceResponse;
+import com.globallogic.reactivestock.generator.TickGenerators;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Validated
 @RestController
 @RequestMapping("/api/ticks")
+@RequiredArgsConstructor
 public class TickController {
 
-    private final GeneratorProperties generatorProperties;
+    private final TickGenerators tickGenerators;
 
-    public TickController(GeneratorProperties properties) {
-        this.generatorProperties = properties;
+    @GetMapping("/{curr1}/{curr2}")
+    public PriceResponse getCurrencyPrice(@PathVariable("curr1") final String curr1,
+                                          @PathVariable("curr2") final String curr2) {
+        return getSymbolPrice(String.format("%s/%s", curr1, curr2));
+    }
+
+    @GetMapping("/{symbol}")
+    public PriceResponse getSymbolPrice(@PathVariable("symbol") final String symbol) {
+        return new PriceResponse(symbol, tickGenerators.getCurrentPrice(symbol));
+    }
+
+    @GetMapping
+    public List<String> getSymbols() {
+        return tickGenerators.getSymbols();
     }
 }
-
-/*
-@Validated
-@RestController
-@RequiredArgsConstructor
-@RequestMapping("/api/v1/account-owners/{owner}/accounts")
-public class AccountController {
-
-    private static final String OWNER = "owner";
-    private static final String ID = "id";
-
-    private final IdentityProvider identity;
-
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("belongsToCustomer() && hasScope('accounts:write')")
-    public AccountResponse createAccount(@PathVariable(OWNER) final String owner,
-                                         @RequestBody @Valid final CreateAccountRequest request) {
-
-        final var accountDetails = getOwner(owner)
-            .createAccount(request.toCommand())
-            .toAccountDetails();
-        final var extraInformation = identity.isExtraInformationEnabled();
-
-        return new AccountResponse(accountDetails, extraInformation);
-    }
-
- */
