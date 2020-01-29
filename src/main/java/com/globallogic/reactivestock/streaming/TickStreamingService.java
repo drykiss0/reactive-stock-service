@@ -1,59 +1,45 @@
 package com.globallogic.reactivestock.streaming;
 
-import com.globallogic.reactivestock.api.rest.dto.AdjustedPriceResponse;
 import com.globallogic.reactivestock.api.rest.dto.PriceResponse;
-import org.springframework.beans.factory.annotation.Value;
+import com.globallogic.reactivestock.api.rest.dto.SymbolDescription;
+import com.globallogic.reactivestock.clients.tickservice.TickServiceClient;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponents;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
 import java.math.RoundingMode;
-import java.time.Duration;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class TickStreamingService {
 
-    @Value("${app.url-tick-service}")
-    private String urlTickServiceBase;
+    private final TickServiceClient tickServiceClient;
 
-    private UriComponents urlTick;
+    public Flux<PriceResponse> getExchangedPrices(final String symbol, final String targetCurrency) {
 
-    @PostConstruct
-    private void init() {
-        urlTick = UriComponentsBuilder.fromUriString(urlTickServiceBase).path("/api/ticks/{symbol}").build();
-    }
-
-    public Flux<AdjustedPriceResponse> getAdjustedPriceFlux(final String symbol, final String currPairSymbol) {
-        final Flux<PriceResponse> symbolFlux = getDistinctPriceFlux(symbol);
-        final Flux<PriceResponse> currencyFlux = getDistinctPriceFlux(currPairSymbol);
+        final Flux<PriceResponse> symbolFlux = tickServiceClient.getDistinctPolledPrices(symbol);
+        final Flux<PriceResponse> currencyFlux = tickServiceClient.getDistinctPolledPrices(
+                getSymbolForExchangeCurrency(symbol, targetCurrency)
+        );
 
         return Flux.combineLatest(symbolFlux, currencyFlux,
                 (sym, curr) -> {
                     System.out.println("Combining: " + sym + " with " + curr);
-                    return new AdjustedPriceResponse(
+                    return new PriceResponse(
                             sym.getSymbol(),
+                            curr.getCurrency(),
                             sym.getPrice().multiply(curr.getPrice()).setScale(4, RoundingMode.HALF_UP));
                 });
     }
 
-    private Flux<PriceResponse> getDistinctPriceFlux(final String symbol) {
-        final Flux<PriceResponse> priceResponseFlux = Flux.interval(Duration.ofSeconds(1))
-                .map(sec -> getTick(symbol))
-                .flatMap(p -> p)
-                .distinct();
+    private String getSymbolForExchangeCurrency(String symbol, String targetCurrency) {
+        Map<String, SymbolDescription> symbols = tickServiceClient.getSymbols().stream()
+                .collect(Collectors.toMap(SymbolDescription::getSymbol, s -> s));
 
-        return priceResponseFlux;
-    }
-
-    private Mono<PriceResponse> getTick(final String symbol) {
-
-        return WebClient.create()
-                .get().uri(urlTick.expand(symbol).toUri())
-                .retrieve()
-                .bodyToMono(PriceResponse.class);
+        // TODO validation
+        SymbolDescription symbolDescription = symbols.get(symbol);
+        return symbols.get(symbolDescription.getCurrency() + "/" + targetCurrency).getSymbol();
     }
 }

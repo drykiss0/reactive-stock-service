@@ -1,6 +1,7 @@
 package com.globallogic.reactivestock.api.rest;
 
 import com.globallogic.reactivestock.api.rest.dto.PriceResponse;
+import com.globallogic.reactivestock.api.rest.dto.SymbolDescription;
 import com.globallogic.reactivestock.generator.TickGenerators;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -27,11 +28,11 @@ public class TickController {
 
     @GetMapping("/{symbol}")
     public PriceResponse getSymbolPrice(@PathVariable("symbol") final String symbol) {
-        return new PriceResponse(symbol, tickGenerators.getCurrentPrice(symbol));
+        return tickGenerators.getCurrentPrice(symbol);
     }
 
     @GetMapping
-    public List<String> getSymbols() {
+    public List<SymbolDescription> getSymbols() {
         return tickGenerators.getSymbols();
     }
 }

@@ -1,5 +1,6 @@
 package com.globallogic.reactivestock.generator;
 
+import com.globallogic.reactivestock.api.rest.dto.SymbolDescription;
 import com.globallogic.reactivestock.properties.InstrumentProperties;
 import lombok.Getter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -20,10 +21,14 @@ class TickGenerator implements Runnable {
     @Getter
     private volatile BigDecimal price;
 
+    public SymbolDescription getSymbol() {
+        return SymbolDescription.fromProperties(this.properties);
+    }
+
     public TickGenerator(final InstrumentProperties properties, final ThreadPoolTaskScheduler taskScheduler) {
         this.properties = properties;
         this.taskScheduler = taskScheduler;
-        this.price = properties.getInitialPrice().setScale(4);
+        this.price = properties.getInitialPrice();
     }
 
     @Override

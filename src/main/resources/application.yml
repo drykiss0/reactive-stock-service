@@ -4,15 +4,17 @@ logging:
 server:
   port: 8080
 app:
-  url-tick-service: "http://localhost:${server.port}"
+  tick-service-base-url: "http://localhost:${server.port}/api"
   generator:
     instruments:
       - symbol: "GOOGL"
+        currency: "USD"
         initialPrice: 1400.00
         maxPercentageDiff: 2
         minTickDelay: 2000
         maxTickDelay: 5000
       - symbol: "USD/PLN"
+        currency: "PLN"
         initialPrice: 3.89
         maxPercentageDiff: 3
         minTickDelay: 500

@@ -1,5 +1,7 @@
 package com.globallogic.reactivestock.generator;
 
+import com.globallogic.reactivestock.api.rest.dto.PriceResponse;
+import com.globallogic.reactivestock.api.rest.dto.SymbolDescription;
 import com.globallogic.reactivestock.properties.GeneratorProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -8,7 +10,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +45,15 @@ public class TickGenerators {
         });
     }
 
-    public BigDecimal getCurrentPrice(final String symbol) {
-        return generators.get(symbol).getPrice();
+    public PriceResponse getCurrentPrice(final String symbol) {
+        final TickGenerator tickGenerator = generators.get(symbol);
+        return new PriceResponse(symbol, tickGenerator.getSymbol().getCurrency(), tickGenerator.getPrice());
     }
 
-    public List<String> getSymbols() {
-        return generators.keySet().stream().sorted().collect(Collectors.toList());
+    public List<SymbolDescription> getSymbols() {
+        return generators.values().stream()
+                .map(TickGenerator::getSymbol)
+                .sorted()
+                .collect(Collectors.toList());
     }
 }
